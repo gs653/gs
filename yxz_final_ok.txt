@@ -1,0 +1,85 @@
+PRO yxz_final_ok
+  COMPILE_OPT IDL2
+
+  ; 1. 选择文件
+  fPathR = DIALOG_PICKFILE(TITLE='请选择数据文件', FILTER='*.dat;*.txt')
+  IF (fPathR EQ '') THEN RETURN
+  PRINT, '读取文件路径：', fPathR
+  
+  OPENR, lunR, fPathR, /GET_LUN
+
+  ; 初始化数组
+  x_vals = [] 
+  y_vals = []
+  strData = ''
+  line_count = 0
+
+  ; 2. 循环读取
+  WHILE ~EOF(lunR) DO BEGIN
+    strData = ''
+    READF, lunR, strData
+    line_count = line_count + 1
+    
+    IF (STRTRIM(strData, 2) EQ '') THEN CONTINUE
+    IF (line_count EQ 1) THEN CONTINUE
+    
+    strData = STRJOIN(STRSPLIT(strData, ',', /EXTRACT), ' ')
+    parts = STRSPLIT(strData, ' ', /EXTRACT)
+    num_parts = N_ELEMENTS(parts)
+    
+    IF (num_parts GE 2) THEN BEGIN
+      x_vals = [x_vals, FLOAT(parts[num_parts-2])]
+      y_vals = [y_vals, FLOAT(parts[num_parts-1])]
+    ENDIF
+  ENDWHILE
+  FREE_LUN, lunR 
+
+  IF (N_ELEMENTS(x_vals) EQ 0) THEN BEGIN
+    PRINT, '错误：没读到数据！'
+    RETURN
+  ENDIF
+  PRINT, '成功读取 ', N_ELEMENTS(x_vals), ' 条有效数据。'
+
+  ; ========================================================
+  ; 3. 【核心绝招】强制在后台画图，并保存为图片！
+  ; ========================================================
+  
+  ; 强制切换到 Z-buffer（虚拟内存）画图，不再尝试显示在屏幕上！
+  SET_PLOT, 'Z'
+  DEVICE, SET_PIXEL_DEPTH=24, SET_RESOLUTION=[1024, 768], DECOMPOSED=0
+  
+  !P.BACKGROUND = 255  ; 白色背景
+  !P.COLOR = 0         ; 黑色线条
+
+  ; 画图到内存
+  PLOT, x_vals, y_vals, PSYM=4, $
+        TITLE='Data Scatter Plot', $
+        XTITLE='X Axis', YTITLE='Y Axis', $
+        /YNOZERO
+
+  ; 【强制保存图片】注意这里换了一个更简单的函数
+  filename_png = '202406030106高尚_scatter.png'
+  result = TVRD()
+  WRITE_PNG, filename_png, result
+  
+  ; 打印图片保存的绝对路径，防止你找不到
+  CD, CURRENT=current_dir
+  PRINT, '图片已保存到文件夹: ', current_dir
+  PRINT, '文件名: ', filename_png
+
+  ; 4. 写文件 (.dat) - 去除所有格式化，直接写！
+  out_filename = '202406030106高尚.dat' 
+  OPENW, lunW, out_filename, /GET_LUN
+  PRINTF, lunW, 'X Y'
+  
+  FOR i = 0, N_ELEMENTS(x_vals) - 1 DO BEGIN
+    line_out = STRTRIM(STRING(x_vals[i]), 2) + '  ' + STRTRIM(STRING(y_vals[i]), 2)
+    PRINTF, lunW, line_out
+  ENDFOR
+  FREE_LUN, lunW
+  
+  PRINT, '=============================='
+  PRINT, '作业已全部完成！'
+  PRINT, '请去上面的文件夹里找图片和数据文件！'
+  PRINT, '=============================='
+END
