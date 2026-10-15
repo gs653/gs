@@ -1,57 +1,77 @@
 ;高尚 202406030106
 ;this is my test program for file operation.
 pro newFileGame
-  file = dialog_pickfile()
-  print,file
-  numLines = file_lines(file)
-  print, 'numbers of lines = ', numLines
+;==================== 【第一类：变量定义】====================
+  file = ''
+  numLines = 0L
+  xDataArr = dblarr(1000)
+  yDataArr = dblarr(1000)
+  zDataArr = dblarr(1000)
+  strLine = ''
+  index = 0L
+  nPart = 0L
+  idv=0.0d & dummy=0.0d & xv=0.0d & yv=0.0d & zv=0.0d
 
-  xDataArr = dblarr(numLines)
-  yDataArr = dblarr(numLines)
-  zDataArr = dblarr(numLines)
+;==================== 【第二类：文件读取】====================
+  file = dialog_pickfile(filter='*.dat',title='选择Dgx.dat数据文件')
+  if (file eq '') then begin
+    print,'没有选择文件，退出程序'
+    return
+  endif
+  print,'选中文件：',file
+
+  numLines = file_lines(file)
+  print,'总行数：',numLines
 
   openr, funR, file, /get_lun
-  strLine = ''
   index = 0
 
   while (~eof(funR)) do begin
     readf, funR, strLine
     strLine = strtrim(strLine,2)
-    if(strlen(strLine) le 0) then continue ;跳过空行
-    
-    ;把 ,, 替换成 ,0, 填充中间空缺字段
-    strLine = strreplace(strLine, ',,', ',0,')
-    ;全部逗号替换为空格，变成空格分隔文本
-    strLine = strreplace(strLine, ',', ' ')
-    
-    ;reads直接解析5个数值：id dummy x y z
-    reads, strLine, idv, dummy, xv, yv, zv, /nolog
-    
+    if (strlen(strLine) le 0) then continue
+
+    parts = strsplit(strLine, ',', /extract, /preserve_null)
+    nPart = n_elements(parts)
+
+    if (nPart ge 1) then idv = double(parts[0])
+    if (nPart ge 2) then dummy = double(parts[1])
+    if (nPart ge 3) then xv = double(parts[2])
+    if (nPart ge 4) then yv = double(parts[3])
+    if (nPart ge 5) then zv = double(parts[4])
+
     xDataArr[index] = xv
     yDataArr[index] = yv
     zDataArr[index] = zv
     index = index + 1
   endwhile
-  free_lun, funR
+  free_lun,funR
 
-  print,'有效行数 index = ',index
-  if(index le 0)then begin
-    print,'没有读到任何有效数据！'
+;==================== 【第三类：数据处理】====================
+  print,'有效数据行数：',index
+  if (index le 0) then begin
+    print,'读取数据失败'
     return
   endif
+  xDataArr = xDataArr[0:index-1]
+  zDataArr = zDataArr[0:index-1]
 
-  xDataArr = xDataArr[0:index - 1]
-  yDataArr = yDataArr[0:index - 1]
-  zDataArr = zDataArr[0:index - 1]
+  ; 计算极值，打印出来看
+  xmin = min(xDataArr)
+  xmax = max(xDataArr)
+  zmin = min(zDataArr)
+  zmax = max(zDataArr)
+  print,'xmin,xmax: ',xmin,xmax
+  print,'zmin,zmax: ',zmin,zmax
 
-  device, decomposed=1
+;==================== 【第四类：绘图输出】====================
+  device,decomposed=0
+  window,0,xsize=700,ysize=500,xpos=50,ypos=50,title='Data Scatter Plot'
+  ;重点！！xrange和yrange使用方括号[]，不是()
+  plot,xDataArr,zDataArr,title='Data Scatter Plot',background=255,color=0,/nodata,$
+    xtitle='X Axis',ytitle='Y Axis',xstyle=1,ystyle=1,$
+    xrange=[xmin,xmax],yrange=[zmin,zmax]
+  oplot,xDataArr,zDataArr,psym=4,symsize=0.8,color=0
 
-  ;第一张：白底
-  window,0,xsize=600,ysize=500,xpos=50,ypos=50,title='White Background Scatter'
-  plot, xDataArr, zDataArr, /nodata, title='White Background Scatter', background='FFFFFF'x
-  oplot, xDataArr, zDataArr, psym=4, color='FF0000'x
-
-  ;第二张：黑底
-  window,1,xsize=600,ysize=500,xpos=700,ypos=50,title='Black Background Scatter'
-  plot, xDataArr, zDataArr, /nodata, title='Black Background Scatter', background='000000'x, color='FFFFFF'x
-  oplot, xDataArr, zDataArr, psym=4,
+  print,'====图像绘制完成！图像窗口已经打开，去桌面查看！===='
+end

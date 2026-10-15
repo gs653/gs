@@ -7,8 +7,8 @@ pro gameImgOps
   help,imgp
  
   ;3.show the image
-  window，0
-  ;tv,imgP,true=1
-  tv,imgP
+  window,0
+  tv,imgP,true=1
+  ;tv,imgP
   
 END
