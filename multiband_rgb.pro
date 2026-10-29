@@ -32,7 +32,7 @@ PRO multiband_rgb
 
   ; 显示
   WINDOW, 0, XSIZE=width, YSIZE=height
-  TV, rgb, TRUE=1
+ TV, rgb, TRUE=1, /ORDER
 
   ; 保存
   WRITE_PNG, 'rgb.png', rgb
@@ -44,7 +44,7 @@ PRO multiband_rgb
 
   ; 在新窗口显示假彩色结果
   WINDOW, 1, XSIZE=width, YSIZE=height
-  TV, rgb_false, TRUE=1
+  TV, rgb_false, TRUE=1, /ORDER
 
   ; 保存假彩色结果
   WRITE_PNG, 'rgb_false.png', rgb_false
