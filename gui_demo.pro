@@ -11,8 +11,8 @@ PRO gui_event, event
   ; 判断是二维灰度还是三维彩色图
   dim = SIZE(img, /N_DIMENSIONS)
 
-  IF dim EQ 2 THEN TVSCL, img, /ORDER
-  IF dim EQ 3 THEN TV, BYTSCL(img), TRUE=1, /ORDER
+  IF dim EQ 2 THEN TVSCL, img
+  IF dim EQ 3 THEN TV, BYTSCL(img), TRUE=1
 
 END
 
